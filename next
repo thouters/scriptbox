@@ -1,0 +1,40 @@
+#!/bin/bash
+ITER="cur"
+
+if [ $# -gt 0 ] && [ $1 = -h ]
+then
+    cat <<EOF
+next - iterate over files using a symbolic link as pointer
+
+usage:
+    \$ next #initialize cur pointer
+    firstfile
+    \$ vi cur
+    \$ echo \$(readlink cur)
+    firstfile
+    \$ next #increment pointer
+    secondfile
+    \$ echo \$(readlink cur)
+    secondfile
+    \$ while [ -n "\`next\`" ] ; do echo \`readlink cur\`; done
+EOF
+exit
+fi
+
+ALL=$(find . -maxdepth 1 -printf "%f\n"|sed 1d|sed 's/^$ITER$//'|sort)
+if [ ! -e $ITER ]
+then
+    NEXT=`echo "$ALL" | sed 1q`
+else
+    CURFILE=`readlink $ITER`
+    NEXT=`echo "$ALL" |grep -A1 "^$CURFILE$"|sed 1d`
+fi
+if [  -e $ITER ]
+then
+    rm $ITER
+fi
+if [  -e "$NEXT" ]
+then
+    ln -s "$NEXT" $ITER
+    echo $NEXT
+fi

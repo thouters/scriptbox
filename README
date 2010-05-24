@@ -1,1 +1,5 @@
-my script toolbox
+thouters' script toolbox
+
+next - iterate over files using a symbolic link as pointer
+waitwrap - wrapper to be used with screen
+

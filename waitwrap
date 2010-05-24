@@ -1,0 +1,25 @@
+#!/bin/bash
+#waitwrap - wrapper to be used with screen
+#example:
+# - screen waitwrap wget http://image.ubuntulinux.org/xyz
+#   (will open wget in a screen tab, set the title and keep it open after cmd finishes)
+# - in a Makefile, start firmware flashing:
+#   jtag-target:
+#           screen waitwrap avrdude -xyz 
+# - waitwrap -l logfile.txt somecommand
+
+echo $0 $@
+if [ $# -gt 0 ] && [ $1 = -l ]
+then
+    shift
+    f=$1
+    shift
+    echo -en "\033k$@\033\\"
+    $@ | tee -a $f
+else
+    echo -en "\033k$@\033\\"
+    $@
+fi
+echo Press ENTER to continue...
+echo -en "\033k@$@\033\\"
+read a
