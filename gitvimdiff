@@ -1,0 +1,76 @@
+#!/bin/bash
+#
+# Copyright (C) 2010,
+#   Thomas Langewouters <thomas.langewouters@thouters.be>
+# Based on the script gitvimdiff, written by
+# Copyright (C) 2007,
+#   Geoff Buchan	<geoffrey.buchan@gmail.com>
+# Based on the script cvsvimdiff, written by
+#   Stefano Zacchiroli	<zack@cs.unibo.it>
+#   Enrico Tassi	<tassi@cs.unibo.it>
+#
+# This is free software, you can redistribute it and/or modify it under the
+# terms of the GNU General Public License version 2 as published by the Free
+# Software Foundation.
+#
+
+vimdiff="vimdiff"
+suffix="vimgitdiff"
+if [[ $1 == "-g" ]] ; then
+  vimdiff="gvimdiff -f"
+  shift 1
+fi
+
+if [[ $# < 0 || $1 == "--help" || $1 == "-h" ]] ; then
+    echo "gitvimdiff - script to show git diff in vimdiff format in tabs"
+    echo ""
+    echo "gitvimdiff [options] file"
+    echo ""
+    echo "Option:"
+    echo "-g    Use gvimdiff (graphical mode) instead of vimdiff"
+    echo "All other options are passed to git diff"
+    echo ""
+    echo "If file is omitted it will cycle through all changed files in"
+    echo "the current directory."
+    exit 1
+fi
+
+# Assume the last argument is the filename.
+# Save everything to pass to svn diff
+if (( $# > 0 )) ; then
+   shift_args=$(($# - 1))
+else
+   shift_args=$#
+fi
+TMP=`mktemp -d /tmp/gitvimdiff.XXXX`
+args=$*
+shift $shift_args
+files="$1"
+patch=$TMP/patch
+script=$TMP/script
+if [ -z $files ] || ! [ -f $files ] ; then
+    # No file given, so loop over all files svn st says have changed
+    files=$(git status 2> /dev/null | grep -e "modified:" | cut -c 15-)
+fi
+
+for new in $files
+do
+    if [[ -z `file $new|grep text` ]]; 
+    then
+        #binary file
+        true
+    else
+        orig=$TMP/$new
+        mkdir -p `dirname $orig`
+        cp "$new" $orig
+        #git diff $args $new > $patch
+        git diff $args $new > $patch
+        if ! [ $? -eq 0 ]; then break; fi
+        patch -R -p0 $orig $patch
+        chmod a-w $orig
+        
+        echo -e ":tabnew $orig\n:vert diffsplit $new" >> $script 
+    fi
+done
+$vimdiff -s $script $indexfile $extras
+trap "rm -rf $TMP" EXIT

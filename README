@@ -2,8 +2,10 @@ thouters' script toolbox
 
 next - iterate over files using a symbolic link as pointer
 waitwrap - wrapper to be used with screen
+das - wrapper around the RequestTracker cli tool (rt), extending it with some functionality
+fsnotify.sh - mail changes to a directory periodically
+perhaps.sh - invokes $1 only when there is data on stdin. for piping to sendmail from cron jobs
+gitvimdiff - open vim, with in each tab a vert diffsplit of changes to the index
 
 will soon be added:
 - CUPS filter that converts HTML subset to ESC/POS commands, for use with POS printers
-- Das Agile Script, wrapper around the RequestTracker cli tool (rt), extending it with some functionality
-- gitvimdiff(gvd): open vim, with in each tab a vert diffsplit of changes to the index
