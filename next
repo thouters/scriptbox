@@ -1,22 +1,30 @@
 #!/bin/bash
 ITER="cur"
 
+if [ $# -gt 0 ] && [ $1 = -i ]
+then
+    ITER="$2"
+fi
+
 if [ $# -gt 0 ] && [ $1 = -h ]
 then
     cat <<EOF
 next - iterate over files using a symbolic link as pointer
 
+options:
+    -i ITERATORFILE
+        use ITERATORFILE instead of "./cur"
 usage:
     \$ next #initialize cur pointer
     firstfile
-    \$ vi cur
-    \$ echo \$(readlink cur)
+    \$ vi ./cur
+    \$ echo \$(readlink ./cur)
     firstfile
     \$ next #increment pointer
     secondfile
-    \$ echo \$(readlink cur)
+    \$ echo \$(readlink ./cur)
     secondfile
-    \$ while [ -n "\`next\`" ] ; do echo \`readlink cur\`; done
+    \$ while [ -n "\`next\`" ] ; do echo \`readlink ./cur\`; done
 EOF
 exit
 fi
@@ -24,17 +32,19 @@ fi
 ALL=$(find . -maxdepth 1 -printf "%f\n"|sed 1d|sed 's/^$ITER$//'|sort)
 if [ ! -e $ITER ]
 then
-    NEXT=`echo "$ALL" | sed 1q`
+    NEXT=$(pwd)/`echo "$ALL" | sed 1q`
 else
-    CURFILE=`readlink $ITER`
-    NEXT=`echo "$ALL" |grep -A1 "^$CURFILE$"|sed 1d`
+    CURFILE=$(basename "`readlink $ITER`")
+    CURFILE=$(printf '%q' "$CURFILE")
+    NEXT=$(echo "$ALL" |grep -A1 "^$CURFILE$")
+    NEXT=$(pwd)/$(echo "$NEXT"|sed 1d)
 fi
 if [  -e $ITER ]
 then
     rm $ITER
 fi
+echo $NEXT
 if [  -e "$NEXT" ]
 then
     ln -s "$NEXT" $ITER
-    echo $NEXT
 fi
