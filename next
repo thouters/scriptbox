@@ -37,7 +37,12 @@ else
     CURFILE=$(basename "`readlink $ITER`")
     CURFILE=$(printf '%q' "$CURFILE")
     NEXT=$(echo "$ALL" |grep -A1 "^$CURFILE$")
-    NEXT=$(pwd)/$(echo "$NEXT"|sed 1d)
+    NEXT=$(echo "$NEXT"|sed 1d)
+    if [ -z $NEXT ]
+    then
+        exit 1
+    fi
+    NEXT=$(pwd)/$NEXT
 fi
 if [  -e $ITER ]
 then
