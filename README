@@ -6,6 +6,8 @@ das - wrapper around the RequestTracker cli tool (rt), extending it with some fu
 fsnotify.sh - mail changes to a directory periodically
 perhaps.sh - invokes $1 only when there is data on stdin. for piping to sendmail from cron jobs
 gitvimdiff - open vim, with in each tab a vert diffsplit of changes to the index
+git-annex-autoadd - find all files not checked into git, and git-annex them.
+git-annex-autocopy - git-annex-copy all files under current directory to specified remote
 
 will soon be added:
 - CUPS filter that converts HTML subset to ESC/POS commands, for use with POS printers

@@ -1,0 +1,8 @@
+#!/bin/bash
+if [ $# -gt 0 ] && [ $1 = --help ]
+then
+    echo find all files not checked into git, and git-annex them.
+    exit
+fi
+
+git status -s |grep -e "^??" |sed 's/?? //g' | sed  -e 's/.*/\"&\"/'| xargs git annex add
