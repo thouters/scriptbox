@@ -1,5 +1,6 @@
 thouters' script toolbox
 
+git-rename: 'rename' from perl, hacked to invoke git-mv
 next - iterate over files using a symbolic link as pointer
 waitwrap - wrapper to be used with screen
 das - wrapper around the RequestTracker cli tool (rt), extending it with some functionality
