@@ -2,7 +2,7 @@
 #
 # Copyright (C) 2010,
 #   Thomas Langewouters <thomas.langewouters@thouters.be>
-# Based on the script gitvimdiff, written by
+# Based on the script svnvimdiff, written by
 # Copyright (C) 2007,
 #   Geoff Buchan	<geoffrey.buchan@gmail.com>
 # Based on the script cvsvimdiff, written by
@@ -50,7 +50,7 @@ patch=$TMP/patch
 script=$TMP/script
 if [ -z $files ] || ! [ -f $files ] ; then
     # No file given, so loop over all files svn st says have changed
-    files=$(git status 2> /dev/null | grep -e "modified:" | cut -c 15-)
+    files=$(git diff --name-only $args)
 fi
 
 for new in $files
@@ -63,14 +63,17 @@ do
         orig=$TMP/$new
         mkdir -p `dirname $orig`
         cp "$new" $orig
-        #git diff $args $new > $patch
         git diff $args $new > $patch
+		chmod u+rwx $patch
+		chmod u+rwx $orig
         if ! [ $? -eq 0 ]; then break; fi
-        patch -R -p0 $orig $patch
+        #patch -R -p0 $orig $patch
+        patch -R -p0 -d $TMP $orig $patch
         chmod a-w $orig
         
         echo -e ":tabnew $orig\n:vert diffsplit $new" >> $script 
     fi
 done
-$vimdiff -s $script $indexfile $extras
-trap "rm -rf $TMP" EXIT
+echo -e ":colo murphy" >> $script 
+$vimdiff -s $script commit.txt
+#trap "rm -rf $TMP" EXIT
