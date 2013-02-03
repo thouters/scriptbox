@@ -9,6 +9,7 @@ perhaps.sh - invokes $1 only when there is data on stdin. for piping to sendmail
 gitvimdiff - open vim, with in each tab a vert diffsplit of changes to the index
 git-annex-autoadd - find all files not checked into git, and git-annex them.
 git-annex-autocopy - git-annex-copy all files under current directory to specified remote
+git-annex-local - create directory named 'local' with symlinks to all annex files that are presetn
 
 will soon be added:
 - CUPS filter that converts HTML subset to ESC/POS commands, for use with POS printers

@@ -1,0 +1,34 @@
+#!/bin/bash
+if [[ $1 == --help ]]
+then
+    echo create directory named 'local' with symlinks to all annex files that are presetn
+    echo usage: $0
+    exit
+fi
+
+while [[ ! -d .git ]]
+do
+    if [[ $PWD/ == // ]]
+    then
+        echo error: not a git repository
+        exit
+    fi
+    cd ..
+done
+
+if [[ ! -d local ]]
+then
+    mkdir local
+else
+    rm local/*
+fi;
+
+git annex find . --print0 | while read -d $'\0' file
+do
+   DIR=$(dirname "$file")
+   LINKDST=$(readlink "$file")
+   ORIG=$DIR/$LINKDST
+   BASENAME=$(basename "$file")
+   ln -s "../$ORIG" local/"$BASENAME"
+done
+
