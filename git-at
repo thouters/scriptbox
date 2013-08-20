@@ -1,0 +1,19 @@
+#!/bin/bash
+if [[ $1 == --help ]]
+then
+    echo "Execute git at a location different than $PWD"
+    echo "example: git at /some/path{/somefile.c} commit -a"
+    echo "example: (vim) :!git at % diff"
+    exit
+fi
+
+WP=$1
+
+if [ -f $WP ]
+then
+    WP=`dirname $1`
+fi
+
+shift
+
+git --git-dir="$WP/.git" --work-tree="$WP" $@
