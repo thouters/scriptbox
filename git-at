@@ -16,4 +16,5 @@ fi
 
 shift
 
-git --git-dir="$WP/.git" --work-tree="$WP" $@
+cd $WP
+git "$@"
