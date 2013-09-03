@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash
 if [ $# -gt 0 ] && [ $1 = --help ]
 then
     echo find all files not checked into git, and git-add them.
