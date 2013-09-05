@@ -5,9 +5,4 @@ then
     exit
 fi
 
-if [ -e .git/annex ]
-then
-        ANNEX="annex"
-fi
-
-git status -s $@ |grep -e "^??" |sed 's/?? //g' | sed  -e 's/.*/\"&\"/'| xargs git $ANNEX add
+git status -s $@ |grep -e "^??" |sed 's/?? //g' | sed  -e 's/.*/\"&\"/'| xargs git add

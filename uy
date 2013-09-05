@@ -1,0 +1,23 @@
+#!/bin/bash
+# up your's directory hierarchy
+# cd or print the path to matching directory higher up the directory tree
+# Using this tool you can avoid typing many ../../../ 
+# example: "ctags -aR ../../../../lib/mylibrary" becomes "ctags -aR `uy lib/mylibrary`"
+
+P=`pwd`
+while [[ ! -e $P/$1 ]]
+do
+    P=`dirname $P`
+    if [ "$P" = "/" ]
+    then
+	break
+    fi
+done
+if [ "$P" = "/" ]
+then
+    echo Not found! >/dev/stderr
+    exit
+fi
+echo $P/$1
+# in case of sourcing
+cd $P/$1
