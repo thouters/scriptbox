@@ -13,3 +13,5 @@ git-annex-local - create directory named 'local' with symlinks to all annex file
 git-autoadd - find all files not checked into git, and git-add them.
 git-at - run git commands on a given checkout, specifying the location of the checkout
 uy - walk up filesystem tree to find a matching file
+snote-thumbdir.sh - run snote-thumb.sh for each snb file found in a folder
+snote-thumb.sh - extract thumbnail jpgs from a samsung note file
