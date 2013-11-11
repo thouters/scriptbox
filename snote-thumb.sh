@@ -1,6 +1,7 @@
 #!/bin/bash
 TMP=`mktemp -d`
 MTIME=`stat -c '%Y' "$1"`
+echo $0: extracting thumbnails from $1...
 unzip "$1" -d $TMP >/dev/null
 FOUND=`find $TMP -iname 'snb_thumbnailimage*.jpg'` 
 for THUMB in $FOUND
