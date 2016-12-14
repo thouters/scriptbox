@@ -1,0 +1,8 @@
+#!/bin/bash
+# cf -- pipe your build command to cf, and start vim with cf.
+# when running your build in a different terminal, use :cf in vim to re-read cf's errorlist
+if [ -t 0 ]; then
+    vi -c "cf /tmp/cf"
+else
+    tee /tmp/cf 
+fi

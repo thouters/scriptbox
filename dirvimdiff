@@ -1,0 +1,58 @@
+#!/bin/bash
+#
+# Copyright (C) 2016,
+#   Thomas Langewouters <thomas.langewouters@thouters.be>
+# Based on the script svnvimdiff, written by
+# Copyright (C) 2007,
+#   Geoff Buchan	<geoffrey.buchan@gmail.com>
+# Based on the script cvsvimdiff, written by
+#   Stefano Zacchiroli	<zack@cs.unibo.it>
+#   Enrico Tassi	<tassi@cs.unibo.it>
+#
+# This is free software, you can redistribute it and/or modify it under the
+# terms of the GNU General Public License version 2 as published by the Free
+# Software Foundation.
+#
+vimdiff="vimdiff"
+suffix="vimgitdiff"
+if [[ $1 == "-g" ]] ; then
+  vimdiff="gvimdiff -f"
+  shift 1
+fi
+
+if [[ $# < 0 || $1 == "--help" || $1 == "-h" ]] ; then
+    echo "dirvimdiff - script to show directory diff in vimdiff format in tabs"
+    echo ""
+    echo "dirvimdiff [options] dir1 dir2"
+    echo ""
+    echo "Option:"
+    echo "-g    Use gvimdiff (graphical mode) instead of vimdiff"
+    echo "All other options are passed to diff"
+    echo ""
+    echo "If file is omitted it will cycle through all changed files in"
+    echo "the current directory."
+    exit 1
+fi
+
+TMP=`mktemp -d /tmp/dirvimdiff.XXXX`
+dir1="$1"
+dir2="$2"
+script=$TMP/script
+
+diff -r $dir1 $dir2 --brief --exclude "*.o" --exclude "*.pdf" --exclude "*.a"  | while read line
+do
+    #line=$(echo $line |sed 's/^Only in \([^:]*\): /\1 \/dev\/null/' | sed 's/^Files \(.*\) and \(.*\) differ/\1 \2/')
+    line=$(echo $line |sed 's/^Only in \([^:]*\): \(.*\)/\1\/\2 \/dev\/null/' | sed 's/^Files \(.*\) and \(.*\) differ/\1 \2/')
+    file1=$(echo $line | cut -f1 -d' ')
+    file2=$(echo $line | cut -f2 -d' ')
+    if [[ "$file2" == "/dev/null" && -d $file1 ]]
+    then
+        echo "skipping directory $file1"
+    else
+        echo $file1 -- $file2
+        echo -e ":tabnew $file1\n:vert diffsplit $file2" >> $script 
+    fi
+done
+#echo -e ":colo murphy" >> $script 
+$vimdiff -s $script commit.txt
+#trap "rm -rf $TMP" EXIT

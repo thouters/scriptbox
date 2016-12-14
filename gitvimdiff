@@ -74,6 +74,5 @@ do
         echo -e ":tabnew $orig\n:vert diffsplit $new" >> $script 
     fi
 done
-echo -e ":colo murphy" >> $script 
 $vimdiff -s $script commit.txt
 #trap "rm -rf $TMP" EXIT
