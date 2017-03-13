@@ -1,0 +1,127 @@
+#!/bin/bash
+#
+# by Thomas Langewouters <thomas.langewouters@thouters.be>
+
+elf=""
+argdst="gdb"
+arg_valgrind=""
+arg_gdb=""
+batch=false
+verbose=false
+
+help() {
+    cat <<EHELP
+valgdb - A valgrind gdb wrapper 
+runs your program under valgrind, with a gdb backtrace when things go wrong
+(-batch), with valgrind and gdb on the same terminal.
+
+Usage: $0 file.elf
+-batch              run mode non-interactive
+--gdb               specify gdb arguments
+--valgrind          specify valgrind arguments
+--valgdb-verbose    verbose mode (for debugging valgdb)
+EHELP
+}
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+    case $key in
+        --help)
+            help
+            exit 0
+        ;;
+        --gdb)
+            argdst="gdb"
+        ;;
+        --valgrind)
+            argdst="valgrind"
+        ;;
+        --valgdb-verbose)
+            verbose=true
+        ;;
+        *)
+            if [ "$elf" == "" ]
+            then
+                elf="$key"
+                if [ ! -f "$elf" ]
+                then
+                    echo "File $elf not found"
+                    exit 1
+                fi
+            fi
+            if [ "$argdst" == "valgrind" ]
+            then
+                arg_valgrind="$arg_valgrind $key"
+            fi
+            if [ "$argdst" == "gdb" ]
+            then
+                arg_gdb="$arg_gdb $key"
+                if [ "$key" == "-batch" ]
+                then
+                    batch=true
+                fi
+            fi
+        ;;
+    esac
+    shift # past argument or value
+done
+
+if [ "$elf" == "" ]
+then
+    help
+    exit 1
+fi
+tmp_gdbcommands=$(mktemp /tmp/valgdb.XXXX)
+
+echo "elf: $elf"
+if [ "$batch" = true ] 
+then
+    echo "gdb batch: enabled"
+else
+    echo "gdb batch: disabled"
+fi
+
+
+valgrind_cmd="valgrind --vgdb=yes --vgdb-error=0 $arg_valgrind $elf"
+[[ "$verbose" = true ]] && echo $valgrind_cmd
+
+jobs &>/dev/null
+$valgrind_cmd 2>&1 & 
+new_job_started="$(jobs -n)"
+if [ -n "$new_job_started" ];then
+pid_valgrind=$!
+else
+pid_valgrind=
+fi
+
+(echo "target remote | /usr/bin/vgdb --pid=$pid_valgrind" ;
+echo "catch signal SIGTRAP";
+echo "commands" ;
+echo "list" ;
+echo "backtrace";
+[[ "$batch" = true ]] && echo "continue";
+echo "end";
+[[ "$batch" = true ]] && echo "continue";
+[[ "$batch" = true ]] && echo "quit";
+) >"$tmp_gdbcommands"
+
+[[ "$verbose" = true ]] && (echo "$tmp_gdbcommands : "; cat "$tmp_gdbcommands" )
+
+#FIXME this is a heuristic wait for valgrind startup
+sleep 2
+
+
+function cleanup {
+    [[ -n "$pid_valgrind" ]] && kill -9 "$pid_valgrind"
+    rm "$tmp_gdbcommands"
+}
+trap cleanup EXIT
+
+if [[ -n "$pid_valgrind" ]] 
+then 
+    echo gdb -x "$tmp_gdbcommands" $arg_gdb $elf
+    gdb -x "$tmp_gdbcommands" $arg_gdb $elf
+# TODO: in -batch mode, we should return valgrind's exit status
+else
+    echo "failed to start valgrind"
+fi 
