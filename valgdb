@@ -8,6 +8,8 @@ arg_valgrind=""
 arg_gdb=""
 batch=false
 verbose=false
+dstargs=""
+capture_dstargs=false
 
 help() {
     cat <<EHELP
@@ -15,7 +17,7 @@ valgdb - A valgrind gdb wrapper
 runs your program under valgrind, with a gdb backtrace when things go wrong
 (-batch), with valgrind and gdb on the same terminal.
 
-Usage: $0 file.elf
+Usage: $0 file.elf -- arguments
 -batch              run mode non-interactive
 --gdb               specify gdb arguments
 --valgrind          specify valgrind arguments
@@ -25,44 +27,55 @@ EHELP
 while [[ $# -gt 0 ]]
 do
     key="$1"
-    case $key in
-        --help)
-            help
-            exit 0
-        ;;
-        --gdb)
-            argdst="gdb"
-        ;;
-        --valgrind)
-            argdst="valgrind"
-        ;;
-        --valgdb-verbose)
-            verbose=true
-        ;;
-        *)
-            if [ "$elf" == "" ]
-            then
-                elf="$key"
-                if [ ! -f "$elf" ]
+
+    if [ "$capture_dstargs" = true ] 
+    then
+        dstargs="$dstargs $key"
+    else
+        case $key in
+            --help)
+                help
+                exit 0
+            ;;
+            --gdb)
+                argdst="gdb"
+            ;;
+            --valgrind)
+                argdst="valgrind"
+            ;;
+            --valgdb-verbose)
+                verbose=true
+            ;;
+            --)
+                capture_dstargs=true
+            ;;
+            *)
+                if [ "$elf" == "" ]
                 then
-                    echo "File $elf not found"
-                    exit 1
+                    elf="$key"
+                    if [ ! -f "$elf" ]
+                    then
+                        echo "File $elf not found"
+                        exit 1
+                    fi
+                else 
+                    if [ "$key" == "-batch" ]
+                    then
+                        batch=true
+                    else
+                        if [ "$argdst" == "valgrind" ]
+                        then
+                            arg_valgrind="$arg_valgrind $key"
+                        fi
+                        if [ "$argdst" == "gdb" ]
+                        then
+                            arg_gdb="$arg_gdb $key"
+                        fi
+                    fi
                 fi
-            fi
-            if [ "$argdst" == "valgrind" ]
-            then
-                arg_valgrind="$arg_valgrind $key"
-            fi
-            if [ "$argdst" == "gdb" ]
-            then
-                arg_gdb="$arg_gdb $key"
-                if [ "$key" == "-batch" ]
-                then
-                    batch=true
-                fi
-            fi
-        ;;
-    esac
+            ;;
+        esac
+    fi
     shift # past argument or value
 done
 
@@ -72,7 +85,7 @@ then
     exit 1
 fi
 tmp_gdbcommands=$(mktemp /tmp/valgdb.XXXX)
-
+echo "args: $dstargs"
 echo "elf: $elf"
 if [ "$batch" = true ] 
 then
@@ -82,7 +95,7 @@ else
 fi
 
 
-valgrind_cmd="valgrind --vgdb=yes --vgdb-error=0 $arg_valgrind $elf"
+valgrind_cmd="valgrind --vgdb=yes --vgdb-error=0 $arg_valgrind $elf $dstargs"
 [[ "$verbose" = true ]] && echo $valgrind_cmd
 
 jobs &>/dev/null
@@ -119,9 +132,10 @@ trap cleanup EXIT
 
 if [[ -n "$pid_valgrind" ]] 
 then 
-    echo gdb -x "$tmp_gdbcommands" $arg_gdb $elf
-    gdb -x "$tmp_gdbcommands" $arg_gdb $elf
+    echo gdb $arg_gdb -x "$tmp_gdbcommands" $elf
+    gdb $arg_gdb -x "$tmp_gdbcommands" $elf
 # TODO: in -batch mode, we should return valgrind's exit status
 else
     echo "failed to start valgrind"
 fi 
+
