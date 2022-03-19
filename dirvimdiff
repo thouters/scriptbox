@@ -1,58 +1,85 @@
-#!/bin/bash
+#!/usr/bin/env python3
+""" diff two folders, show diffences per file in a tab """
+import os
+import sys
+import re
+import tempfile
+import subprocess
+import logging
+import io
 #
 # Copyright (C) 2016,
 #   Thomas Langewouters <thomas.langewouters@thouters.be>
-# Based on the script svnvimdiff, written by
-# Copyright (C) 2007,
-#   Geoff Buchan	<geoffrey.buchan@gmail.com>
-# Based on the script cvsvimdiff, written by
-#   Stefano Zacchiroli	<zack@cs.unibo.it>
-#   Enrico Tassi	<tassi@cs.unibo.it>
+# Copyright (C) 2022,
+#   Thomas Langewouters <thomas.langewouters@thouters.be>
 #
 # This is free software, you can redistribute it and/or modify it under the
 # terms of the GNU General Public License version 2 as published by the Free
 # Software Foundation.
 #
-vimdiff="vimdiff"
-suffix="vimgitdiff"
-if [[ $1 == "-g" ]] ; then
-  vimdiff="gvimdiff -f"
-  shift 1
-fi
+# KNOWN ISSUES
+# This file's quality is 'QUICK HACK'
+# - it expects LOCALE/ env LANG to be 'C'
+# - parses output of 'diff', will fail if filenames contain 'Only in', ': ', etc
+# -
 
-if [[ $# < 0 || $1 == "--help" || $1 == "-h" ]] ; then
-    echo "dirvimdiff - script to show directory diff in vimdiff format in tabs"
-    echo ""
-    echo "dirvimdiff [options] dir1 dir2"
-    echo ""
-    echo "Option:"
-    echo "-g    Use gvimdiff (graphical mode) instead of vimdiff"
-    echo "All other options are passed to diff"
-    echo ""
-    echo "If file is omitted it will cycle through all changed files in"
-    echo "the current directory."
-    exit 1
-fi
+NEWLINE = "\n"
+HELP = """\
+dirvimdiff - script to show two directories' file differences in vim tabs"
+dirvimdiff [options] dir1 dir2"
 
-TMP=`mktemp -d /tmp/dirvimdiff.XXXX`
-dir1="$1"
-dir2="$2"
-script=$TMP/script
+Option:
+-g    Use gvimdiff (graphical mode) instead of vimdiff"
+All other options are passed to diff
+"""
 
-diff -r $dir1 $dir2 --brief --exclude "*.o" --exclude "*.pdf" --exclude "*.a"  | while read line
-do
-    #line=$(echo $line |sed 's/^Only in \([^:]*\): /\1 \/dev\/null/' | sed 's/^Files \(.*\) and \(.*\) differ/\1 \2/')
-    line=$(echo $line |sed 's/^Only in \([^:]*\): \(.*\)/\1\/\2 \/dev\/null/' | sed 's/^Files \(.*\) and \(.*\) differ/\1 \2/')
-    file1=$(echo $line | cut -f1 -d' ')
-    file2=$(echo $line | cut -f2 -d' ')
-    if [[ "$file2" == "/dev/null" && -d $file1 ]]
-    then
-        echo "skipping directory $file1"
-    else
-        echo $file1 -- $file2
-        echo -e ":tabnew $file1\n:vert diffsplit $file2" >> $script 
-    fi
-done
-#echo -e ":colo murphy" >> $script 
-$vimdiff -s $script commit.txt
-#trap "rm -rf $TMP" EXIT
+
+def main():
+    """ main function """
+    vimdiff = "vimdiff"
+    if sys.argv[1] == "-g":
+        vimdiff = "gvimdiff -f"
+        del sys.argv[1]
+
+    if "--help" in sys.argv:
+        print(HELP)
+        sys.exit(1)
+
+    _scriptname = sys.argv.pop(0)
+    dir1 = sys.argv.pop(0)
+    dir2 = sys.argv.pop(0)
+
+    cmd = f"diff -r {dir1} {dir2} --brief --exclude '*.o' --exclude '*.pdf' --exclude '*.a'"
+
+    with tempfile.NamedTemporaryFile(prefix='dirvimdiff', encoding='utf-8', mode='w') as script, \
+            subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE) as proc:
+        for line in io.TextIOWrapper(proc.stdout, encoding="utf-8"):
+            if line.startswith("Only in"):
+                only_in = line[len("Only in "):line.find(
+                    ": ")] + "/" + line[line.find(": ")+2:]
+                logging.debug("ONLY IN %s", only_in)
+                logging.debug("DIR1 %s", dir1)
+                logging.debug("DIR2 %s", dir2)
+                if only_in.startswith(dir1):
+                    files = (only_in, "/dev/null")
+                else:
+                    files = ("/dev/null", only_in)
+            elif line.startswith("Files "):
+                files = re.match("Files (.*) and (.*) differ", line).groups()
+                logging.debug("DIFFER %s", files)
+            else:
+                raise Exception(f"unexepcted {line}")
+
+            command = f":tabnew {files[0]}{NEWLINE}:vert diffsplit {files[1]}{NEWLINE}"
+            logging.debug("command: %s", command)
+            script.write(command)
+        script.flush()
+
+        logging.debug("script is %s", script.name)
+        command = f"{vimdiff} -s {script.name}"
+        if os.path.isfile("commit.txt"):
+            command += " commit.txt"
+        os.system(command)
+
+if __name__ == "__main__":
+    main()
