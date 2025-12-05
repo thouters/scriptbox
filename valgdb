@@ -95,7 +95,7 @@ else
 fi
 
 
-valgrind_cmd="valgrind --vgdb=yes --vgdb-error=0 $arg_valgrind $elf $dstargs"
+valgrind_cmd="/usr/local/bin/valgrind --vgdb=yes --vgdb-error=0 $arg_valgrind $elf $dstargs"
 [[ "$verbose" = true ]] && echo $valgrind_cmd
 
 jobs &>/dev/null
@@ -107,7 +107,7 @@ else
 pid_valgrind=
 fi
 
-(echo "target remote | /usr/bin/vgdb --pid=$pid_valgrind" ;
+(echo "target remote | /usr/local/bin/vgdb --pid=$pid_valgrind" ;
 echo "catch signal SIGTRAP";
 echo "commands" ;
 echo "list" ;

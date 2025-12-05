@@ -13,15 +13,15 @@
 # terms of the GNU General Public License version 2 as published by the Free
 # Software Foundation.
 #
-
+set -ex
 vimdiff="vimdiff"
-suffix="vimgitdiff"
+#suffix="vimgitdiff"
 if [[ $1 == "-g" ]] ; then
   vimdiff="gvimdiff -f"
   shift 1
 fi
 
-if [[ $# < 0 || $1 == "--help" || $1 == "-h" ]] ; then
+if [[ $# -lt 0 || $1 == "--help" || $1 == "-h" ]] ; then
     echo "gitvimdiff - script to show git diff in vimdiff format in tabs"
     echo ""
     echo "gitvimdiff [options] file"
@@ -42,37 +42,57 @@ if (( $# > 0 )) ; then
 else
    shift_args=$#
 fi
-TMP=`mktemp -d /tmp/gitvimdiff.XXXX`
+TMP=$(mktemp -d /tmp/gitvimdiff.XXXX)
 args=$*
-shift $shift_args
+shift "$shift_args"
 files="$1"
-patch=$TMP/patch
+#patch=$TMP/patch
 script=$TMP/script
-if [ -z $files ] || ! [ -f $files ] ; then
+GITROOT=$(pwd)
+while [[ ! -e $GITROOT/$1 ]]
+do
+    GITROOT=$(dirname "$GITROOT")
+    if [ "$GITROOT" = "/" ]
+    then
+	break
+    fi
+done
+if [ "$GITROOT" = "/" ]
+then
+    echo gitroot found! >/dev/stderr
+    exit 0
+fi
+
+cd "$GITROOT"
+if [ -z "$files" ] || ! [ -f "$files" ] ; then
     # No file given, so loop over all files svn st says have changed
-    files=$(git diff --name-only $args)
+    if [ -z "$args" ]; then
+        files=$(git diff --name-only) 
+    else
+        files=$(git diff --name-only "$args")
+    fi
+    echo "Changed files: $files"
+
+    if [ -z "$files" ] ; then
+        echo "No changes to show"
+        exit 1
+    fi
 fi
 
 for new in $files
 do
-    if [[ -z `file $new|grep text` ]]; 
+#Instead of [ -z $(foo | grep bar) ], use ! foo | grep -q bar . [SC2143]
+    if ! file "$new" |grep -q text; 
     then
         #binary file
         true
     else
         orig=$TMP/$new
-        mkdir -p `dirname $orig`
-        cp "$new" $orig
-        git diff $args $new > $patch
-		chmod u+rwx $patch
-		chmod u+rwx $orig
-        if ! [ $? -eq 0 ]; then break; fi
-        #patch -R -p0 $orig $patch
-        patch -R -p0 -d $TMP $orig $patch
-        chmod a-w $orig
+        mkdir -p "$(dirname "$orig")"
+        git show HEAD:"$new" >"$orig"
         
-        echo -e ":tabnew $orig\n:vert diffsplit $new" >> $script 
+        echo -e ":tabnew $orig\n:vert diffsplit $new" >> "$script"
     fi
 done
-$vimdiff -s $script commit.txt
+$vimdiff -s "$script" commit.txt
 #trap "rm -rf $TMP" EXIT
