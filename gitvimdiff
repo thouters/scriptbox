@@ -59,7 +59,7 @@ do
 done
 if [ "$GITROOT" = "/" ]
 then
-    echo gitroot found! >/dev/stderr
+    echo gitroot not found! >/dev/stderr
     exit 0
 fi
 
@@ -67,7 +67,7 @@ cd "$GITROOT"
 if [ -z "$files" ] || ! [ -f "$files" ] ; then
     # No file given, so loop over all files svn st says have changed
     if [ -z "$args" ]; then
-        files=$(git diff --name-only) 
+        files=$(git diff --name-only)
     else
         files=$(git diff --name-only "$args")
     fi
@@ -82,7 +82,7 @@ fi
 for new in $files
 do
 #Instead of [ -z $(foo | grep bar) ], use ! foo | grep -q bar . [SC2143]
-    if ! file "$new" |grep -q text; 
+    if ! file "$new" |grep -q text;
     then
         #binary file
         true
@@ -90,7 +90,7 @@ do
         orig=$TMP/$new
         mkdir -p "$(dirname "$orig")"
         git show HEAD:"$new" >"$orig"
-        
+
         echo -e ":tabnew $orig\n:vert diffsplit $new" >> "$script"
     fi
 done

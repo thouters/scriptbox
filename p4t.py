@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from P4 import P4,P4Exception
 import pprint
 import shutil
@@ -19,7 +20,7 @@ class Impact:
         return x["depotFile"]
 
 class ImpactPerforceChange:
-	def __init__(self,changelist, depotFile, rev, fileSize, digest, type_,action):
+    def __init__(self,changelist, depotFile, rev, fileSize, digest, type_,action):
             self.changelist = changelist
             self.depotFile = depotFile
             self.rev = int(rev)
@@ -27,7 +28,7 @@ class ImpactPerforceChange:
             self.digest = digest
             self.type_ = type_
             self.action = action
-	    self.localfile = self.changelist.impact.repoToLocal(depotFile)
+            self.localfile = self.changelist.impact.repoToLocal(depotFile)
 
 class ImpactPerforceChangeList:
     def __init__(self,impact,change):
@@ -46,8 +47,9 @@ class ImpactPerforceChangeList:
         self.changes = []
     def update(self):
         details = self.impact.p4.run("describe",self.change)[0]
+        print(details)
         self.updateFields(details)
-	filedetails = zip(
+        filedetails = zip(
           details['depotFile'],
           details['rev'],
           details['fileSize'],
@@ -60,7 +62,7 @@ class ImpactPerforceChangeList:
 
 def p4t_change(cl_nr):
     impact = Impact(p4)
-    l = ImpactPerforceChangeList(impact, cl_nr) 
+    l = ImpactPerforceChangeList(impact, cl_nr)
     l.update()
     tempdir = tempfile.mkdtemp("p4t")
     scriptpath=tempdir+os.path.sep+"script"
@@ -89,7 +91,7 @@ def p4t_change(cl_nr):
             oldpath = "{}#{}{}".format(name,oldrev,ext)
             p4.run("print","-o"+oldpath,c.depotFile+ "#{}".format(oldrev))
             scriptcontent += ":vert diffsplit {}\n".format(oldpath.replace("#","\#"))
-            
+
     summarycontent=os.popen('p4 describe -s {}'.format(cl_nr)).read()
     open(summarypath,'w').write(summarycontent)
     open(scriptpath,'w').write(scriptcontent)
