@@ -13,7 +13,7 @@
 # terms of the GNU General Public License version 2 as published by the Free
 # Software Foundation.
 #
-set -ex
+set -e
 vimdiff="vimdiff"
 #suffix="vimgitdiff"
 if [[ $1 == "-g" ]] ; then
@@ -22,9 +22,9 @@ if [[ $1 == "-g" ]] ; then
 fi
 
 if [[ $# -lt 0 || $1 == "--help" || $1 == "-h" ]] ; then
-    echo "gitvimdiff - script to show git diff in vimdiff format in tabs"
+    echo "westvimdiff - script to show git diff in vimdiff format in tabs"
     echo ""
-    echo "gitvimdiff [options] file"
+    echo "westvimdiff [options] file"
     echo ""
     echo "Option:"
     echo "-g    Use gvimdiff (graphical mode) instead of vimdiff"
@@ -42,62 +42,54 @@ if (( $# > 0 )) ; then
 else
    shift_args=$#
 fi
-TMP=$(mktemp -d /tmp/gitvimdiff.XXXX)
+TMP=$(mktemp -d /tmp/westvimdiff.XXXX)
 args=$*
 shift "$shift_args"
 files="$1"
 #patch=$TMP/patch
 script=$TMP/script
-GITROOT=$(dirname $1)
-while [[ ! -e $GITROOT/.git ]]
+WESTROOT=$(pwd)
+while [[ ! -e $WESTROOT/.west ]]
 do
-    GITROOT=$(dirname "$GITROOT")
-    if [ "$GITROOT" = "/" ]
+    WESTROOT=$(dirname "$WESTROOT")
+    if [ "$WESTROOT" = "/" ]
     then
 	break
     fi
 done
-if [ "$GITROOT" = "/" ]
+if [ "$WESTROOT" = "/" ]
 then
-    echo gitroot not found! >/dev/stderr
+    echo WESTROOT not found! >/dev/stderr
     exit 0
 fi
 
-if [ -n "$files" ]
-then
-    echo $files
-    files=${files#"${GITROOT}/"}
-    echo $files
-fi
-cd "$GITROOT"
-
-# No file given, so loop over all files svn st says have changed
-if [ -z "$args" ]; then
-    files=$(git diff --name-only)
-else
-    files=$(git diff --name-only "$files")
-fi
-echo "Changed files: $files"
-
-if [ -z "$files" ] ; then
-    echo "No changes to show"
-    exit 1
-fi
-
-for new in $files
+cd "$WESTROOT"
+for WEST_MODULEDIR in $(west list -f "{path}")
 do
-#Instead of [ -z $(foo | grep bar) ], use ! foo | grep -q bar . [SC2143]
-    if ! file "$new" |grep -q text;
-    then
-        #binary file
-        true
+    cd "${WESTROOT}/${WEST_MODULEDIR}"
+    # No file given, so loop over all files svn st says have changed
+    if [ -z "$args" ]; then
+        files=$(git diff --name-only)
     else
-        orig=$TMP/$new
-        mkdir -p "$(dirname "$orig")"
-        git show HEAD:"$new" >"$orig"
-
-        echo -e ":tabnew $orig\n:vert diffsplit $new" >> "$script"
+        files=$(git diff --name-only "$args")
     fi
+
+    for new in $files
+    do
+    #Instead of [ -z $(foo | grep bar) ], use ! foo | grep -q bar . [SC2143]
+        if ! file "$new" |grep -q text;
+        then
+            #binary file
+            true
+        else
+            orig=$TMP/$new
+            mkdir -p "$(dirname "$orig")"
+            git show HEAD:"$new" >"$orig"
+
+            echo -e ":tabnew $orig\n:vert diffsplit $PWD/$new" >> "$script"
+        fi
+    done
 done
+
 $vimdiff -s "$script" commit.txt
 #trap "rm -rf $TMP" EXIT

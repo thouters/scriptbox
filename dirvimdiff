@@ -53,6 +53,7 @@ def main():
 
     with tempfile.NamedTemporaryFile(prefix='dirvimdiff', encoding='utf-8', mode='w') as script, \
             subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE) as proc:
+        script.write(":ex\n")
         for line in io.TextIOWrapper(proc.stdout, encoding="utf-8"):
             if line.startswith("Only in"):
                 only_in = line[len("Only in "):line.find(
@@ -73,6 +74,7 @@ def main():
             command = f":tabnew {files[0]}{NEWLINE}:vert diffsplit {files[1]}{NEWLINE}"
             logging.debug("command: %s", command)
             script.write(command)
+        script.write(":vi\n")
         script.flush()
 
         logging.debug("script is %s", script.name)

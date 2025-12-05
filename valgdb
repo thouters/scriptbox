@@ -13,7 +13,7 @@ capture_dstargs=false
 
 help() {
     cat <<EHELP
-valgdb - A valgrind gdb wrapper 
+valgdb - A valgrind gdb wrapper
 runs your program under valgrind, with a gdb backtrace when things go wrong
 (-batch), with valgrind and gdb on the same terminal.
 
@@ -28,7 +28,7 @@ while [[ $# -gt 0 ]]
 do
     key="$1"
 
-    if [ "$capture_dstargs" = true ] 
+    if [ "$capture_dstargs" = true ]
     then
         dstargs="$dstargs $key"
     else
@@ -58,7 +58,7 @@ do
                         echo "File $elf not found"
                         exit 1
                     fi
-                else 
+                else
                     if [ "$key" == "-batch" ]
                     then
                         batch=true
@@ -87,7 +87,7 @@ fi
 tmp_gdbcommands=$(mktemp /tmp/valgdb.XXXX)
 echo "args: $dstargs"
 echo "elf: $elf"
-if [ "$batch" = true ] 
+if [ "$batch" = true ]
 then
     echo "gdb batch: enabled"
 else
@@ -95,11 +95,11 @@ else
 fi
 
 
-valgrind_cmd="/usr/local/bin/valgrind --vgdb=yes --vgdb-error=0 $arg_valgrind $elf $dstargs"
+valgrind_cmd="/usr/bin/valgrind --vgdb=yes --vgdb-error=0 $arg_valgrind $elf $dstargs"
 [[ "$verbose" = true ]] && echo $valgrind_cmd
 
 jobs &>/dev/null
-$valgrind_cmd 2>&1 & 
+$valgrind_cmd 2>&1 &
 new_job_started="$(jobs -n)"
 if [ -n "$new_job_started" ];then
 pid_valgrind=$!
@@ -107,7 +107,7 @@ else
 pid_valgrind=
 fi
 
-(echo "target remote | /usr/local/bin/vgdb --pid=$pid_valgrind" ;
+(echo "target remote | /usr/bin/vgdb --pid=$pid_valgrind" ;
 echo "catch signal SIGTRAP";
 echo "commands" ;
 echo "list" ;
@@ -130,12 +130,12 @@ function cleanup {
 }
 trap cleanup EXIT
 
-if [[ -n "$pid_valgrind" ]] 
-then 
+if [[ -n "$pid_valgrind" ]]
+then
     echo gdb $arg_gdb -x "$tmp_gdbcommands" $elf
     gdb $arg_gdb -x "$tmp_gdbcommands" $elf
 # TODO: in -batch mode, we should return valgrind's exit status
 else
     echo "failed to start valgrind"
-fi 
+fi
 
